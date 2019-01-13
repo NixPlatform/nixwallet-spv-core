@@ -46,14 +46,14 @@
 #if BITCOIN_TESTNET
 #define MAGIC_NUMBER 0xf1c8d2fd
 #else
-#define MAGIC_NUMBER 0xdbb6c0fb
+#define MAGIC_NUMBER 0xf9beb4b9
 #endif
 #define HEADER_LENGTH      24
 #define MAX_MSG_LENGTH     0x02000000
 #define MAX_GETDATA_HASHES 50000
 #define ENABLED_SERVICES   0ULL  // we don't provide full blocks to remote nodes
-#define PROTOCOL_VERSION   70015
-#define MIN_PROTO_VERSION  70002 // peers earlier than this protocol version not supported (need v0.9 txFee relay rules)
+#define PROTOCOL_VERSION   70021
+#define MIN_PROTO_VERSION  70021 // peers earlier than this protocol version not supported (need v0.9 txFee relay rules)
 #define LOCAL_HOST         ((UInt128) { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff, 0x7f, 0x00, 0x00, 0x01 })
 #define CONNECT_TIMEOUT    3.0
 #define MESSAGE_TIMEOUT    10.0
@@ -1452,6 +1452,31 @@ void BRPeerSendInv(BRPeer *peer, const UInt256 txHashes[], size_t txCount)
         }
 
         BRPeerSendMessage(peer, msg, off, MSG_INV);
+    }
+}
+
+void BRPeerSendGhostnode(BRPeer *peer, const UInt256 txHashes[], size_t txCount)
+{
+    BRPeerContext *ctx = (BRPeerContext *)peer;
+    size_t knownCount = array_count(ctx->knownTxHashes);
+    
+    _BRPeerAddKnownTxHashes(peer, txHashes, txCount);
+    txCount = array_count(ctx->knownTxHashes) - knownCount;
+    
+    if (txCount > 0) {
+        size_t i, off = 0, msgLen = BRVarIntSize(txCount) + (sizeof(uint32_t) + sizeof(*txHashes))*txCount;
+        uint8_t msg[msgLen];
+        
+        off += BRVarIntSet(&msg[off], (off <= msgLen ? msgLen - off : 0), txCount);
+        
+        for (i = 0; i < txCount; i++) {
+            UInt32SetLE(&msg[off], inv_tx);
+            off += sizeof(uint32_t);
+            UInt256Set(&msg[off], ctx->knownTxHashes[knownCount + i]);
+            off += sizeof(UInt256);
+        }
+        
+        BRPeerSendMessage(peer, msg, off, MSG_GHOSTNODE_ANNOUNCE);
     }
 }
 

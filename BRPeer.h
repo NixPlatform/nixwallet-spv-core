@@ -53,17 +53,17 @@ extern "C" {
 #endif
 
 #if BITCOIN_TESTNET
-#define STANDARD_PORT 19335
+#define STANDARD_PORT 16214
 #else
-#define STANDARD_PORT 9333
+#define STANDARD_PORT 6214
 #endif
 
 #define SERVICES_NODE_NETWORK 0x01 // services value indicating a node carries full blocks, not just headers
 #define SERVICES_NODE_BLOOM   0x04 // BIP111: https://github.com/bitcoin/bips/blob/master/bip-0111.mediawiki
 #define SERVICES_NODE_BCASH   0x20 // https://github.com/Bitcoin-UAHF/spec/blob/master/uahf-technical-spec.md
 
-#define BR_VERSION "2.0.0"
-#define USER_AGENT "/loaf:" BR_VERSION "/"
+#define BR_VERSION "1.0.0"
+#define USER_AGENT "/nix-spv-wallet:" BR_VERSION "/"
 
 // explanation of message types at: https://en.bitcoin.it/wiki/Protocol_specification
 #define MSG_VERSION     "version"
@@ -88,6 +88,9 @@ extern "C" {
 #define MSG_ALERT       "alert"
 #define MSG_REJECT      "reject"   // described in BIP61: https://github.com/bitcoin/bips/blob/master/bip-0061.mediawiki
 #define MSG_FEEFILTER   "feefilter"// described in BIP133 https://github.com/bitcoin/bips/blob/master/bip-0133.mediawiki
+
+// nix
+#define MSG_GHOSTNODE_ANNOUNCE   "msb"
 
 #define REJECT_INVALID     0x10 // transaction is invalid for some reason (invalid signature, output value > input, etc)
 #define REJECT_SPENT       0x12 // an input is already spent
@@ -190,6 +193,8 @@ void BRPeerSendMempool(BRPeer *peer, const UInt256 knownTxHashes[], size_t known
 void BRPeerSendGetheaders(BRPeer *peer, const UInt256 locators[], size_t locatorsCount, UInt256 hashStop);
 void BRPeerSendGetblocks(BRPeer *peer, const UInt256 locators[], size_t locatorsCount, UInt256 hashStop);
 void BRPeerSendInv(BRPeer *peer, const UInt256 txHashes[], size_t txCount);
+void BRPeerSendGhostnode(BRPeer *peer, const UInt256 txHashes[], size_t txCount);
+
 void BRPeerSendGetdata(BRPeer *peer, const UInt256 txHashes[], size_t txCount, const UInt256 blockHashes[],
                        size_t blockCount);
 void BRPeerSendGetaddr(BRPeer *peer);

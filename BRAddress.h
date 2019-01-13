@@ -39,8 +39,8 @@ extern "C" {
 #endif
 
 // bitcoin address prefixes
-#define BITCOIN_PUBKEY_ADDRESS      48
-#define BITCOIN_SCRIPT_ADDRESS      50
+#define BITCOIN_PUBKEY_ADDRESS      38
+#define BITCOIN_SCRIPT_ADDRESS      53
 #define BITCOIN_PUBKEY_ADDRESS_TEST 111
 #define BITCOIN_SCRIPT_ADDRESS_TEST 58
 
@@ -54,7 +54,17 @@ extern "C" {
 #define OP_EQUALVERIFY 0x88
 #define OP_HASH160     0xa9
 #define OP_CHECKSIG    0xac
+    
+/* Custom NIX config */
 
+// Staking script
+#define OP_ISCOINSTAKE = 0xb8
+#define OP_DROP = 0x75
+    
+    // zerocoin params
+#define OP_ZEROCOINMINT = 0xc1
+#define OP_ZEROCOINSPEND = 0xc2
+    
 // reads a varint from buf and stores its length in intLen if intLen is non-NULL
 // returns the varint value
 uint64_t BRVarInt(const uint8_t *buf, size_t bufLen, size_t *intLen);
