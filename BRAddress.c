@@ -278,9 +278,9 @@ size_t BRAddressFromScriptPubKey(char *addr, size_t addrLen, const uint8_t *scri
     else if (count == 2 && ((*elems[0] == OP_0 && (*elems[1] == 20 || *elems[1] == 32)) ||
                             (*elems[0] >= OP_1 && *elems[0] <= OP_16 && *elems[1] >= 2 && *elems[1] <= 40))) {
         // pay-to-witness scriptPubKey
-        r = BRBech32Encode(a, "ltc", script);
+        r = BRBech32Encode(a, "nix", script);
 #if BITCOIN_TESTNET
-        r = BRBech32Encode(a, "tltc", script);
+        r = BRBech32Encode(a, "tnix", script);
 #endif
         if (addr && r > addrLen) r = 0;
         if (addr) memcpy(addr, a, r);
@@ -340,7 +340,7 @@ size_t BRAddressFromWitness(char *addr, size_t addrLen, const uint8_t *witness, 
 size_t BRAddressScriptPubKey(uint8_t *script, size_t scriptLen, const char *addr)
 {
     uint8_t data[42], pubkeyAddress = BITCOIN_PUBKEY_ADDRESS, scriptAddress = BITCOIN_SCRIPT_ADDRESS;
-    char hrp[84], *bech32Prefix = "ltc";
+    char hrp[84], *bech32Prefix = "nix";
     size_t dataLen, r = 0;
     
     assert(addr != NULL);
@@ -348,7 +348,7 @@ size_t BRAddressScriptPubKey(uint8_t *script, size_t scriptLen, const char *addr
 #if BITCOIN_TESTNET
     pubkeyAddress = BITCOIN_PUBKEY_ADDRESS_TEST;
     scriptAddress = BITCOIN_SCRIPT_ADDRESS_TEST;
-    bech32Prefix = "tltc";
+    bech32Prefix = "tnix";
 #endif
     
     if (BRBase58CheckDecode(data, sizeof(data), addr) == 21) {
@@ -404,10 +404,10 @@ int BRAddressIsValid(const char *addr)
 #endif
     }
     else if (BRBech32Decode(hrp, data, addr) > 2) {
-        r = (strcmp(hrp, "ltc") == 0 && (data[0] != OP_0 || data[1] == 20 || data[1] == 32));
+        r = (strcmp(hrp, "nix") == 0 && (data[0] != OP_0 || data[1] == 20 || data[1] == 32));
 
 #if BITCOIN_TESTNET
-        r = (strcmp(hrp, "tltc") == 0 && (data[0] != OP_0 || data[1] == 20 || data[1] == 32));
+        r = (strcmp(hrp, "tnix") == 0 && (data[0] != OP_0 || data[1] == 20 || data[1] == 32));
 #endif
     }
     
