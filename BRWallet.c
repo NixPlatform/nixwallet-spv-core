@@ -828,7 +828,8 @@ BRTransaction *BRWalletTransactionForHash(BRWallet *wallet, UInt256 txHash)
     BRTransaction *tx;
     
     assert(wallet != NULL);
-    assert(! UInt256IsZero(txHash));
+    //In the event a zerocoin spend comes through, the transaction input will be 0 so skip this assertion
+    //assert(! UInt256IsZero(txHash));
     pthread_mutex_lock(&wallet->lock);
     tx = BRSetGet(wallet->allTx, &txHash);
     pthread_mutex_unlock(&wallet->lock);
