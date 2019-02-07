@@ -32,6 +32,8 @@
 #include <float.h>
 #include <pthread.h>
 #include <assert.h>
+#include <ctype.h>
+#include <stdio.h>
 
 struct BRWalletStruct {
     uint64_t balance, totalSent, totalReceived, feePerKb, *balanceHist;
@@ -560,6 +562,20 @@ BRTransaction *BRWalletCreateTransaction(BRWallet *wallet, uint64_t amount, cons
     return BRWalletCreateTxForOutputs(wallet, &o, 1);
 }
 
+// returns an unsigned zerocoin mint transaction that sends the specified amount from the wallet to the given address
+// result must be freed by calling BRTransactionFree()
+BRTransaction *BRWalletCreateGhostTransaction(BRWallet *wallet, uint64_t amount, const char *addr, size_t size)
+{
+    BRTxOutput o = BR_TX_OUTPUT_NONE;
+    
+    assert(wallet != NULL);
+    assert(amount > 0);
+    assert(addr != NULL);
+    o.amount = amount;
+    BRTxOutputSetZerocoinMint(&o, addr, size);
+    return BRWalletCreateTxForZerocoinMintOutputs(wallet, &o, 1);
+}
+
 // returns an unsigned transaction that satisifes the given transaction outputs
 // result must be freed by calling BRTransactionFree()
 BRTransaction *BRWalletCreateTxForOutputs(BRWallet *wallet, const BRTxOutput outputs[], size_t outCount)
@@ -647,6 +663,76 @@ BRTransaction *BRWalletCreateTxForOutputs(BRWallet *wallet, const BRTxOutput out
         uint8_t script[BRAddressScriptPubKey(NULL, 0, addr.s)];
         size_t scriptLen = BRAddressScriptPubKey(script, sizeof(script), addr.s);
     
+        BRTransactionAddOutput(transaction, balance - (amount + feeAmount), script, scriptLen);
+        BRTransactionShuffleOutputs(transaction);
+    }
+    
+    return transaction;
+}
+
+// returns an unsigned transaction that satisifes the given transaction outputs
+// result must be freed by calling BRTransactionFree()
+BRTransaction *BRWalletCreateTxForZerocoinMintOutputs(BRWallet *wallet, const BRTxOutput outputs[], size_t outCount)
+{
+    BRTransaction *tx, *transaction = BRTransactionNew();
+    uint64_t feeAmount, amount = 0, balance = 0, minAmount;
+    size_t i, cpfpSize = 0;
+    BRUTXO *o;
+    BRAddress addr = BR_ADDRESS_NONE;
+    
+    assert(wallet != NULL);
+    assert(outputs != NULL && outCount > 0);
+    
+    for (i = 0; outputs && i < outCount; i++) {
+        assert(outputs[i].script != NULL && outputs[i].scriptLen > 0);
+        BRTransactionAddOutput(transaction, outputs[i].amount, outputs[i].script, outputs[i].scriptLen);
+        amount += outputs[i].amount;
+    }
+    
+    minAmount = BRWalletMinOutputAmount(wallet);
+    pthread_mutex_lock(&wallet->lock);
+    feeAmount = _txFee(wallet->feePerKb, BRTransactionSize(transaction) + TX_OUTPUT_SIZE);
+    
+    // TODO: use up all UTXOs for all used addresses to avoid leaving funds in addresses whose public key is revealed
+    // TODO: avoid combining addresses in a single transaction when possible to reduce information leakage
+    // TODO: use up UTXOs received from any of the output scripts that this transaction sends funds to, to mitigate an
+    //       attacker double spending and requesting a refund
+    for (i = 0; i < array_count(wallet->utxos); i++) {
+        o = &wallet->utxos[i];
+        tx = BRSetGet(wallet->allTx, o);
+        if (! tx || o->n >= tx->outCount) continue;
+        BRTransactionAddInput(transaction, tx->txHash, o->n, tx->outputs[o->n].amount,
+                              tx->outputs[o->n].script, tx->outputs[o->n].scriptLen, NULL, 0, TXIN_SEQUENCE);
+        
+        
+        balance += tx->outputs[o->n].amount;
+        
+        //        // size of unconfirmed, non-change inputs for child-pays-for-parent fee
+        //        // don't include parent tx with more than 10 inputs or 10 outputs
+        //        if (tx->blockHeight == TX_UNCONFIRMED && tx->inCount <= 10 && tx->outCount <= 10 &&
+        //            ! _BRWalletTxIsSend(wallet, tx)) cpfpSize += BRTransactionSize(tx);
+        
+        // fee amount after adding a change output
+        feeAmount = _txFee(wallet->feePerKb, BRTransactionSize(transaction) + TX_OUTPUT_SIZE + cpfpSize);
+        
+        // increase fee to round off remaining wallet balance to nearest 100 satoshi
+        if (wallet->balance > amount + feeAmount) feeAmount += (wallet->balance - (amount + feeAmount)) % 100;
+        
+        if (balance == amount + feeAmount || balance >= amount + feeAmount + minAmount) break;
+    }
+    
+    pthread_mutex_unlock(&wallet->lock);
+    
+    if (transaction && (outCount < 1 || balance < amount + feeAmount)) { // no outputs/insufficient funds
+        BRTransactionFree(transaction);
+        transaction = NULL;
+    }
+    
+    else if (transaction && balance - (amount + feeAmount) > minAmount) { // add change output
+        BRWalletUnusedAddrs(wallet, &addr, 1, 1);
+        uint8_t script[BRAddressScriptPubKey(NULL, 0, addr.s)];
+        size_t scriptLen = BRAddressScriptPubKey(script, sizeof(script), addr.s);
+        
         BRTransactionAddOutput(transaction, balance - (amount + feeAmount), script, scriptLen);
         BRTransactionShuffleOutputs(transaction);
     }

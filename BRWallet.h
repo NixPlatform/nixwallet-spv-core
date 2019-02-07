@@ -125,10 +125,18 @@ void BRWalletSetFeePerKb(BRWallet *wallet, uint64_t feePerKb);
 // result must be freed using BRTransactionFree()
 BRTransaction *BRWalletCreateTransaction(BRWallet *wallet, uint64_t amount, const char *addr);
 
+// returns an unsigned zerocoin mint transaction that sends the specified amount from the wallet to the given address
+// result must be freed using BRTransactionFree()
+BRTransaction *BRWalletCreateGhostTransaction(BRWallet *wallet, uint64_t amount, const char *addr, size_t);
+
 // returns an unsigned transaction that satisifes the given transaction outputs
 // result must be freed using BRTransactionFree()
 BRTransaction *BRWalletCreateTxForOutputs(BRWallet *wallet, const BRTxOutput outputs[], size_t outCount);
 
+// returns an unsigned transaction that satisifes the given transaction outputs
+// result must be freed using BRTransactionFree()
+BRTransaction *BRWalletCreateTxForZerocoinMintOutputs(BRWallet *wallet, const BRTxOutput outputs[], size_t outCount);
+    
 // signs any inputs in tx that can be signed using private keys from the wallet
 // forkId is 0 for bitcoin, 0x40 for b-cash
 // seed is the master private key (wallet seed) corresponding to the master public key given when the wallet was created

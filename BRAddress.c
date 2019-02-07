@@ -388,3 +388,28 @@ int BRAddressHash160(void *md20, const char *addr)
     if (r) memcpy(md20, &data[1], 20);
     return r;
 }
+
+unsigned char* hexstr_to_char(const char* hexstr)
+{
+    size_t len = strlen(hexstr);
+    assert(len % 2 == 0);
+    size_t final_len = len / 2;
+    unsigned char* chrs = (unsigned char*)malloc((final_len+1) * sizeof(*chrs));
+    for (size_t i=0, j=0; j<final_len; i+=2, j++)
+        chrs[j] = (hexstr[i] % 32 + 9) % 25 * 16 + (hexstr[i+1] % 32 + 9) % 25;
+    chrs[final_len] = '\0';
+    return chrs;
+}
+
+size_t BRAddressScriptZerocoinMint(uint8_t *script, size_t scriptLen, const char *addr)
+{
+    size_t r = 1;
+    assert(addr != NULL);
+
+    uint8_t * pubkeyScript = hexstr_to_char(addr);
+    script[0] = OP_ZEROCOINMINT;
+    script[1] = scriptLen;
+    memcpy(&script[2], &pubkeyScript[0], scriptLen);
+    
+    return r;
+}

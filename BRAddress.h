@@ -58,12 +58,12 @@ extern "C" {
 /* Custom NIX config */
 
 // Staking script
-#define OP_ISCOINSTAKE = 0xb8
-#define OP_DROP = 0x75
+#define OP_ISCOINSTAKE  0xb8
+#define OP_DROP  0x75
     
     // zerocoin params
-#define OP_ZEROCOINMINT = 0xc1
-#define OP_ZEROCOINSPEND = 0xc2
+#define OP_ZEROCOINMINT  0xc1
+#define OP_ZEROCOINSPEND  0xc2
     
 // reads a varint from buf and stores its length in intLen if intLen is non-NULL
 // returns the varint value
@@ -122,6 +122,9 @@ inline static int BRAddressEq(const void *addr, const void *otherAddr)
     return (addr == otherAddr ||
             strncmp((const char *)addr, (const char *)otherAddr, sizeof(BRAddress)) == 0);
 }
+
+size_t BRAddressScriptZerocoinMint(uint8_t *script, size_t scriptLen, const char *addr);
+
 
 #ifdef __cplusplus
 }

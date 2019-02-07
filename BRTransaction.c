@@ -600,3 +600,21 @@ void BRTransactionFree(BRTransaction *tx)
         free(tx);
     }
 }
+
+void BRTxOutputSetZerocoinMint(BRTxOutput *output, const char *address, size_t size)
+{
+    assert(output != NULL);
+    assert(address == NULL);
+    if (output->script) array_free(output->script);
+    output->script = NULL;
+    output->scriptLen = 0;
+    memset(output->address, 0, sizeof(output->address));
+    
+    if (address) {
+        strncpy(output->address, address, sizeof(output->address) - 1);
+        output->scriptLen = size;
+        array_new(output->script, output->scriptLen + 2);
+        array_set_count(output->script, output->scriptLen + 2);
+        BRAddressScriptZerocoinMint(output->script, output->scriptLen, address);
+    }
+}

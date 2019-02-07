@@ -148,6 +148,8 @@ inline static int BRTransactionEq(const void *tx, const void *otherTx)
 
 // frees memory allocated for tx
 void BRTransactionFree(BRTransaction *tx);
+    
+void BRTxOutputSetZerocoinMint(BRTxOutput *output, const char *address, size_t size);
 
 #ifdef __cplusplus
 }
