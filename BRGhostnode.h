@@ -12,6 +12,8 @@
 #include <stdio.h>
 #include "BRKey.h"
 #include "BRInt.h"
+#include "BRTransaction.h"
+#include "BRPeer.h"
 #include <stddef.h>
 #include <inttypes.h>
 
